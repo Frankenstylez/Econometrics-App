@@ -1,0 +1,29 @@
+                                OLS Regression Results                               
+=====================================================================================
+Dep. Variable:     Y : Revennue Thousand THB   R-squared:                       0.985
+Model:                                   OLS   Adj. R-squared:                  0.983
+Method:                        Least Squares   F-statistic:                     564.7
+Date:                       Mon, 05 Jan 2026   Prob (F-statistic):           8.94e-24
+Time:                               01:18:40   Log-Likelihood:                -322.97
+No. Observations:                         30   AIC:                             653.9
+Df Residuals:                             26   BIC:                             659.5
+Df Model:                                  3                                         
+Covariance Type:                   nonrobust                                         
+================================================================================================
+                                   coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------------------------
+const                          888.5157   4.11e+04      0.022      0.983   -8.36e+04    8.54e+04
+X1 : Ad Expense Thousand THB    18.9557      2.445      7.754      0.000      13.931      23.981
+X2 : GDP (Billion THB)          11.9615      3.080      3.884      0.001       5.631      18.292
+X3 : CPI                     -2663.7000    776.093     -3.432      0.002   -4258.982   -1068.418
+==============================================================================
+Omnibus:                        3.429   Durbin-Watson:                   0.700
+Prob(Omnibus):                  0.180   Jarque-Bera (JB):                1.864
+Skew:                          -0.334   Prob(JB):                        0.394
+Kurtosis:                       1.978   Cond. No.                     3.15e+05
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 3.15e+05. This might indicate that there are
+strong multicollinearity or other numerical problems.
