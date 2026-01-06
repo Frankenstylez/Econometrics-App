@@ -4,78 +4,78 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import statsmodels.api as sm
-import io
-import base64
-import os
+import io, base64, os
 
 app = Flask(__name__)
-
-# ตั้งค่าให้ Matplotlib ไม่ต้องเปิดหน้าต่างกราฟ (ป้องกัน Error บน Server)
 plt.switch_backend('Agg')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     plot_url = None
-    correlation_html = None
-    regression_summary = None
+    correlation_table = None
+    regression_table = None
     prediction = None
-    
-    # ดึงรายชื่อคอลัมน์จากไฟล์ที่อัปโหลด (ถ้ามี)
+    y_name = ""
+    x_names = []
+
     if request.method == 'POST':
-        file = request.files['file']
-        if file:
+        file = request.files.get('file')
+        if file and file.filename != '':
             try:
                 df = pd.read_excel(file)
                 df.columns = df.columns.str.strip()
-                
-                # ตัวแปรคงที่ตามไฟล์ของคุณ
-                X_COLS = ['X1 : Ad Expense Thousand THB', 'X2 : GDP (Billion THB)', 'X3 : CPI']
-                Y_COL = 'Y : Revennue Thousand THB'
-                
-                # ตรวจสอบว่ามีคอลัมน์ครบไหม
-                available_cols = [c for c in X_COLS + [Y_COL] if c in df.columns]
-                df_clean = df[available_cols].dropna()
+                all_cols = df.columns.tolist()
 
-                # 1. การคำนวณ Correlation
-                corr_matrix = df_clean.corr()
-                correlation_html = corr_matrix.to_html(classes='table table-hover table-bordered text-center')
+                y_list = [c for c in all_cols if 'Y' in c.upper()]
+                y_name = y_list[0] if y_list else all_cols[-1]
+                x_names = [c for c in all_cols if 'X' in c.upper() and c != y_name]
+                if not x_names: x_names = [c for c in all_cols if c != y_name]
 
-                # 2. การคำนวณ Regression (OLS)
-                X = sm.add_constant(df_clean[X_COLS])
-                y = df_clean[Y_COL]
+                df_clean = df[x_names + [y_name]].dropna()
+
+                # --- คำนวณ Regression ---
+                X = sm.add_constant(df_clean[x_names])
+                y = df_clean[y_name]
                 model = sm.OLS(y, X).fit()
-                regression_summary = model.summary().as_html()
+                regression_table = model.summary().as_html()
 
-                # 3. สร้างกราฟ Correlation Heatmap
-                plt.figure(figsize=(10, 8))
-                sns.heatmap(corr_matrix, annot=True, cmap='RdYlGn', center=0)
-                plt.title('Correlation Analysis')
+                # --- สร้างกราฟ Scatter + Trend Line + Equation ---
+                num_x = len(x_names)
+                fig, axes = plt.subplots(1, num_x, figsize=(6*num_x, 5), squeeze=False)
                 
+                for i, x_col in enumerate(x_names):
+                    # วาดจุดข้อมูล
+                    sns.regplot(x=x_col, y=y_name, data=df_clean, ax=axes[0, i], 
+                                line_kws={"color": "red", "lw": 2})
+                    
+                    # คำนวณสมการรายตัวแปร (Simple Regression สำหรับกราฟ)
+                    x_sub = sm.add_constant(df_clean[x_col])
+                    sub_model = sm.OLS(y, x_sub).fit()
+                    intercept = sub_model.params[0]
+                    slope = sub_model.params[1]
+                    r2 = sub_model.rsquared
+                    
+                    # ใส่ข้อความสมการบนกราฟ
+                    eq_text = f'Y = {slope:.2f}X + {intercept:.2f}\n$R^2$ = {r2:.3f}'
+                    axes[0, i].set_title(f'Relation: {x_col}\n{eq_text}', fontsize=12, color='darkblue')
+
+                plt.tight_layout()
                 img = io.BytesIO()
                 plt.savefig(img, format='png', bbox_inches='tight')
                 img.seek(0)
                 plot_url = base64.b64encode(img.getvalue()).decode()
                 plt.close()
 
-                # 4. ระบบพยากรณ์ (ถ้ามีการกรอกตัวเลขเข้ามา)
-                if 'val1' in request.form and request.form['val1']:
-                    v1 = float(request.form.get('val1', 0))
-                    v2 = float(request.form.get('val2', 0))
-                    v3 = float(request.form.get('val3', 0))
-                    # คำนวณตามสมการ: Y = const + b1X1 + b2X2 + b3X3
-                    input_data = [1, v1, v2, v3]
-                    prediction = model.predict(input_data)[0]
+                # ระบบพยากรณ์
+                inputs = [float(request.form.get(f'x_input_{i}', 0)) for i in range(len(x_names)) if request.form.get(f'x_input_{i}')]
+                if len(inputs) == len(x_names):
+                    prediction = model.predict([1] + inputs)[0]
 
             except Exception as e:
-                regression_summary = f"<div class='alert alert-danger'>Error: {str(e)}</div>"
+                regression_table = f"<div class='alert alert-danger'>{str(e)}</div>"
 
-    return render_template('index.html', 
-                           plot_url=plot_url, 
-                           correlation_table=correlation_html, 
-                           regression_table=regression_summary,
-                           prediction=prediction)
+    return render_template('index.html', plot_url=plot_url, regression_table=regression_table, 
+                           prediction=prediction, y_name=y_name, x_names=x_names)
 
 if __name__ == "__main__":
-    # รองรับ Port สำหรับ Render
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
