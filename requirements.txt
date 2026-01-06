@@ -6,4 +6,4 @@ flask
 statsmodels
 openpyxl
 gunicorn
-
+scikit-learn
