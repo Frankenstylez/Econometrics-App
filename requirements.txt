@@ -3,10 +3,7 @@ matplotlib
 seaborn
 gunicorn
 flask
-flask
-pandas
-matplotlib
-seaborn
 statsmodels
 openpyxl
 gunicorn
+
