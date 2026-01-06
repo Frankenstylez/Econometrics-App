@@ -3,75 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Econometrics Web App</title>
+    <title>Econometrics Pro Tool</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; }
-        .card { border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .header-section { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 40px 0; border-radius: 0 0 30px 30px; }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        .navbar { background: #002366; color: white; padding: 20px; border-radius: 0 0 20px 20px; }
+        .card { border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .btn-analyze { background: #002366; color: white; border-radius: 10px; font-weight: bold; }
+        .btn-analyze:hover { background: #003399; color: white; }
+        .table-responsive { font-size: 0.85rem; }
+        .equation-box { background: #fff; border-left: 5px solid #002366; padding: 15px; border-radius: 5px; }
     </style>
 </head>
 <body>
-<div class="header-section text-center mb-5">
-    <h1>📊 Econometrics Insight Pro</h1>
-    <p>Upload data, analyze correlations, and predict future outcomes</p>
+
+<div class="navbar text-center mb-5 shadow">
+    <div class="container">
+        <h2 class="mb-0">🚀 Econometrics Analysis Pro</h2>
+        <p class="mb-0 opacity-75">Multiple Regression with Trend Line & Equations</p>
+    </div>
 </div>
+
 <div class="container">
     <div class="row">
-        <div class="col-lg-4">
-            <div class="card p-4 mb-4">
-                <h4 class="mb-3">1. Upload Data</h4>
+        <div class="col-lg-4 mb-4">
+            <div class="card p-4">
                 <form method="POST" enctype="multipart/form-data">
-                    <input type="file" name="file" class="form-control mb-3" required>
-                    <hr>
-                    <h4 class="mb-3">2. Prediction Tool</h4>
+                    <h5 class="text-primary mb-3">1. แหล่งข้อมูล (Data)</h5>
+                    <label class="small text-muted mb-2">อัปโหลดไฟล์ Excel (.xlsx)</label>
+                    <input type="file" name="file" class="form-control mb-4">
+                    
+                    {% if x_names %}
+                    <h5 class="text-primary mb-3">2. การพยากรณ์ (Prediction)</h5>
+                    <p class="small text-muted">ใส่ค่า {{ x_names | length }} ตัวแปรเพื่อหาค่า {{ y_name }}:</p>
+                    {% for x in x_names %}
                     <div class="mb-2">
-                        <label class="small">Ad Expense (X1)</label>
-                        <input type="number" step="any" name="val1" class="form-control form-control-sm" placeholder="e.g. 150">
+                        <label class="small fw-bold">{{ x }}</label>
+                        <input type="number" step="any" name="x_input_{{ loop.index0 }}" class="form-control form-control-sm" required>
                     </div>
-                    <div class="mb-2">
-                        <label class="small">GDP (X2)</label>
-                        <input type="number" step="any" name="val2" class="form-control form-control-sm" placeholder="e.g. 5000">
-                    </div>
-                    <div class="mb-3">
-                        <label class="small">CPI (X3)</label>
-                        <input type="number" step="any" name="val3" class="form-control form-control-sm" placeholder="e.g. 105">
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Run Full Analysis</button>
+                    {% endfor %}
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-analyze w-100 mt-3 py-2 shadow-sm">วิเคราะห์ข้อมูล</button>
                 </form>
+
                 {% if prediction %}
-                <div class="alert alert-success mt-4">
-                    <h6 class="mb-1">Predicted Revenue (Y):</h6>
-                    <h3 class="mb-0">{{ "{:,.2f}".format(prediction) }}</h3>
+                <div class="mt-4 p-3 bg-success bg-opacity-10 border border-success rounded text-center">
+                    <small class="text-success d-block fw-bold">ผลการพยากรณ์ค่า {{ y_name }}:</small>
+                    <h3 class="text-success mb-0 font-monospace">{{ "{:,.4f}".format(prediction) }}</h3>
                 </div>
                 {% endif %}
             </div>
         </div>
+
         <div class="col-lg-8">
             {% if plot_url %}
             <div class="card p-4 mb-4">
-                <h4 class="text-primary border-bottom pb-2">Correlation Analysis</h4>
-                <div class="row align-items-center">
-                    <div class="col-md-6">{{ correlation_table | safe }}</div>
-                    <div class="col-md-6 text-center">
-                        <img src="data:image/png;base64,{{ plot_url }}" class="img-fluid rounded">
-                    </div>
+                <h5 class="border-bottom pb-2 mb-4 text-primary font-weight-bold">Regression Visualization (Trend Lines)</h5>
+                <div class="text-center">
+                    <img src="data:image/png;base64,{{ plot_url }}" class="img-fluid rounded border shadow-sm mb-3">
+                    <p class="small text-muted fst-italic">* เส้นสีแดงแสดง Trend Line และสมการ Regression ของแต่ละคู่ตัวแปรอิสระ</p>
                 </div>
             </div>
-            <div class="card p-4 mb-4">
-                <h4 class="text-primary border-bottom pb-2">Regression Summary (OLS)</h4>
+
+            <div class="card p-4 mb-4 text-center">
+                 <h5 class="border-bottom pb-2 mb-4 text-primary">Regression Statistics (OLS Summary)</h5>
                 <div class="table-responsive">
                     {{ regression_table | safe }}
                 </div>
             </div>
             {% else %}
-            <div class="text-center py-5 text-muted">
-                <h3>Welcome! Please upload an Excel file to start.</h3>
-                <p>Ensure your file has columns: X1, X2, X3 and Y</p>
+            <div class="card p-5 text-center bg-white border-dashed shadow-sm">
+                <h3 class="text-muted">ยินดีต้อนรับ!</h3>
+                <p class="text-muted mb-0">กรุณาอัปโหลดไฟล์ Excel เพื่อเริ่มต้นการวิเคราะห์ทางเศรษฐมิติ</p>
+                <hr>
+                <div class="text-start small">
+                    <p class="fw-bold mb-1">คำแนะนำ:</p>
+                    <ul>
+                        <li>หัวคอลัมน์ควรมีคำว่า <strong>"X"</strong> (ตัวแปรอิสระ) และ <strong>"Y"</strong> (ตัวแปรตาม)</li>
+                        <li>รองรับตัวแปรอิสระมากกว่า 3 ตัวขึ้นไป</li>
+                        <li>ระบบจะคำนวณค่า Constant (Intercept) ให้โดยอัตโนมัติ</li>
+                    </ul>
+                </div>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<footer class="text-center mt-5 mb-4 text-muted small">
+    © 2026 Econometrics Insight Pro | พัฒนาด้วย Flask & Statsmodels
+</footer>
+
 </body>
 </html>
